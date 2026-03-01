@@ -1,5 +1,13 @@
-def extract():
-    print("Extracting data...")
-    data = [{"id": 1, "name": "Partner A"}, {"id": 2, "name": "Partner B"}]
-    print(f"Extracted {len(data)} records")
-    return data
+def transform(data):
+    print(f"Transforming {len(data)} records...")
+    transformed = []
+    for record in data:
+        if record.get("status") == "active":
+            transformed.append({
+                "id": record["id"],
+                "name": record["name"].upper(),
+                "country": record.get("country"),
+                "is_active": True,
+            })
+    print(f"Transformed: {len(transformed)} active records kept from {len(data)} total")
+    return transformed
