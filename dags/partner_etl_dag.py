@@ -9,7 +9,7 @@ default_args = {
     'email_on_failure': False,
 }
 
-def extract():
+def extract(**context):
     print("Extracting partner data...")
     partners = [
         {"partner_id": 1, "name": "Partner A", "status": "active", "country": "DE"},
@@ -17,20 +17,22 @@ def extract():
         {"partner_id": 3, "name": "Partner C", "status": "active", "country": "UK"},
     ]
     print(f"Extracted {len(partners)} partner records")
-    return partners
+    context['ti'].xcom_push(key='raw_partners', value=partners)
 
-def transform():
-    print("Transforming partner data...")
+def transform(**context):
+    partners = context['ti'].xcom_pull(task_ids='extract_partners', key='raw_partners')
+    print(f"Transforming {len(partners)} partner records...")
     transformed = [
-        {"partner_id": 1, "name": "PARTNER A", "status": "active", "country": "DE"},
-        {"partner_id": 3, "name": "PARTNER C", "status": "active", "country": "UK"},
+        {"partner_id": p["partner_id"], "name": p["name"].upper(), "country": p["country"]}
+        for p in partners if p["status"] == "active"
     ]
     print(f"Kept {len(transformed)} active partners")
-    return transformed
+    context['ti'].xcom_push(key='transformed_partners', value=transformed)
 
-def load():
-    print("Loading partner data into target system...")
-    print("Successfully loaded 2 active partner records")
+def load(**context):
+    transformed = context['ti'].xcom_pull(task_ids='transform_partners', key='transformed_partners')
+    print(f"Loading {len(transformed)} partner records into target system...")
+    print(f"Successfully loaded {len(transformed)} active partner records")
 
 with DAG(
     dag_id='partner_etl_pipeline',
@@ -45,16 +47,19 @@ with DAG(
     task_extract = PythonOperator(
         task_id='extract_partners',
         python_callable=extract,
+        provide_context=True,
     )
 
     task_transform = PythonOperator(
         task_id='transform_partners',
         python_callable=transform,
+        provide_context=True,
     )
 
     task_load = PythonOperator(
         task_id='load_partners',
         python_callable=load,
+        provide_context=True,
     )
 
     task_extract >> task_transform >> task_load
