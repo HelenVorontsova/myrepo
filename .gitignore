@@ -1,0 +1,22 @@
+```
+# Airflow
+logs/
+plugins/
+__pycache__/
+*.pyc
+*.pyo
+
+# Docker
+.env
+
+# Python
+*.egg-info/
+dist/
+build/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
